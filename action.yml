@@ -1,0 +1,50 @@
+name: DechoNet deploy gate
+description: Fail the job when the deployed site misses your HTTPS, certificate or security-header bar (DechoNet public checks).
+author: DechoNet
+branding:
+  icon: shield
+  color: gray
+inputs:
+  url:
+    description: Deployed URL to check, e.g. https://example.com/
+    required: true
+  min-ssl-grade:
+    description: Lowest acceptable SSL grade (A+, A, B, C, D, E, F)
+    default: B
+  min-header-grade:
+    description: Lowest acceptable security-header grade (A+ … F)
+    default: C
+  min-cert-days:
+    description: Fail when the certificate expires in fewer days
+    default: '14'
+  require-https:
+    description: Fail when the final page is served over plain HTTP ('true' or 'false')
+    default: 'true'
+  api-key:
+    description: Optional DechoNet API key (own rate limits). Store it as a secret.
+    default: ''
+  fail-on-unknown:
+    description: Also fail when a check could not be verified ('true' or 'false')
+    default: 'false'
+  endpoint:
+    description: API base URL
+    default: https://dechonet.com
+outputs:
+  pass:
+    description: "'true' when every check passed"
+    value: ${{ steps.gate.outputs.pass }}
+runs:
+  using: composite
+  steps:
+    - id: gate
+      shell: bash
+      env:
+        DN_URL: ${{ inputs.url }}
+        DN_MIN_SSL: ${{ inputs.min-ssl-grade }}
+        DN_MIN_HEADERS: ${{ inputs.min-header-grade }}
+        DN_MIN_DAYS: ${{ inputs.min-cert-days }}
+        DN_HTTPS: ${{ inputs.require-https }}
+        DN_KEY: ${{ inputs.api-key }}
+        DN_UNKNOWN: ${{ inputs.fail-on-unknown }}
+        DN_ENDPOINT: ${{ inputs.endpoint }}
+      run: bash "${{ github.action_path }}/gate.sh"

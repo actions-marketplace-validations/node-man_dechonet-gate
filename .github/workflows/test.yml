@@ -1,0 +1,15 @@
+name: test
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: gate
+        uses: ./
+        with:
+          url: https://dechonet.com/
+      - run: test "${{ steps.gate.outputs.pass }}" = "true"
