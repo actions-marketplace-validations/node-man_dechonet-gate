@@ -1,5 +1,7 @@
 # DechoNet deploy gate
 
+**[dechonet.com](https://dechonet.com)** · [Go-live check in the browser](https://dechonet.com/util/golive) · [Full domain check](https://dechonet.com/util/all) · [HTTP API](https://dechonet.com/developers) · [MCP server for AI agents](https://dechonet.com/mcp)
+
 A GitHub Action that fails the job when the site you just deployed misses your
 bar on HTTPS, the TLS certificate or security headers. It calls DechoNet's
 public check (`/api/util/gate` — the same SSL and HTTP tools as
