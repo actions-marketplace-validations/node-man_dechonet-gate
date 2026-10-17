@@ -13,3 +13,19 @@ jobs:
         with:
           url: https://dechonet.com/
       - run: test "${{ steps.gate.outputs.pass }}" = "true"
+  workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Our own workflows pass at 'high'
+        uses: ./
+        with:
+          check-workflows: 'true'
+      - id: bad
+        name: The unsafe fixture fails
+        continue-on-error: true
+        uses: ./
+        with:
+          check-workflows: 'true'
+          workflows-dir: test/fixtures
+      - run: test "${{ steps.bad.outcome }}" = "failure"

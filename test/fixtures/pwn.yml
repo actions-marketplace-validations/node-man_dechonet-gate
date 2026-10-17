@@ -1,0 +1,15 @@
+# Deliberately unsafe workflow for the action's own test (never runs: it is not under .github/workflows).
+on:
+  pull_request_target:
+    types: [opened]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: some-org/some-action@v2
+      - run: |
+          echo "Title: ${{ github.event.pull_request.title }}"
+          npm test

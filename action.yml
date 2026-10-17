@@ -1,13 +1,13 @@
 name: DechoNet deploy gate
-description: Fail the job when the deployed site misses your HTTPS, certificate or security-header bar (DechoNet public checks).
+description: Fail the job when the deployed site misses your HTTPS, certificate or security-header bar, or a workflow has a supply-chain hole (DechoNet).
 author: DechoNet
 branding:
   icon: shield
   color: gray
 inputs:
   url:
-    description: Deployed URL to check, e.g. https://example.com/
-    required: true
+    description: Deployed URL to check, e.g. https://example.com/ (leave empty to run only the workflow check)
+    default: ''
   min-ssl-grade:
     description: Lowest acceptable SSL grade (A+, A, B, C, D, E, F)
     default: B
@@ -29,14 +29,27 @@ inputs:
   endpoint:
     description: API base URL
     default: https://dechonet.com
+  check-workflows:
+    description: Also check this repository's workflow files for supply-chain holes, on the runner — nothing is sent ('true' or 'false')
+    default: 'false'
+  workflows-fail-on:
+    description: Lowest workflow finding that fails the job (high, medium, info, none)
+    default: high
+  workflows-dir:
+    description: Directory with the workflow files
+    default: .github/workflows
 outputs:
   pass:
-    description: "'true' when every check passed"
+    description: "'true' when every site check passed"
     value: ${{ steps.gate.outputs.pass }}
+  workflows-pass:
+    description: "'true' when the workflow check found nothing at or above workflows-fail-on"
+    value: ${{ steps.workflows.outputs.workflows-pass }}
 runs:
   using: composite
   steps:
     - id: gate
+      if: inputs.url != ''
       shell: bash
       env:
         DN_URL: ${{ inputs.url }}
@@ -48,3 +61,11 @@ runs:
         DN_UNKNOWN: ${{ inputs.fail-on-unknown }}
         DN_ENDPOINT: ${{ inputs.endpoint }}
       run: bash "${{ github.action_path }}/gate.sh"
+    - id: workflows
+      # Runs after the site check even when that failed, so one run reports both.
+      if: ${{ !cancelled() && inputs.check-workflows == 'true' }}
+      shell: bash
+      env:
+        DN_WORKFLOWS_DIR: ${{ inputs.workflows-dir }}
+        DN_WORKFLOWS_FAIL_ON: ${{ inputs.workflows-fail-on }}
+      run: node "${{ github.action_path }}/workflows.mjs"
