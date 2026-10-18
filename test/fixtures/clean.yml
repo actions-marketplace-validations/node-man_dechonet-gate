@@ -1,0 +1,14 @@
+# A workflow the check should leave alone.
+on: [push]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: some-org/some-action@0123456789abcdef0123456789abcdef01234567 # v2.1.0
+      - name: Greet
+        env:
+          TITLE: ${{ github.event.head_commit.message }}
+        run: echo "$TITLE"

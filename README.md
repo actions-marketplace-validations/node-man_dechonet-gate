@@ -3,7 +3,8 @@
 **[dechonet.com](https://dechonet.com)** · [Go-live check in the browser](https://dechonet.com/util/golive) · [Full domain check](https://dechonet.com/util/all) · [HTTP API](https://dechonet.com/developers) · [MCP server for AI agents](https://dechonet.com/mcp)
 
 A GitHub Action that fails the job when the site you just deployed misses your
-bar on HTTPS, the TLS certificate or security headers. It calls DechoNet's
+bar on HTTPS, the TLS certificate or security headers — and, if you ask, when one
+of your own workflows has a supply-chain hole. It calls DechoNet's
 public check (`/api/util/gate` — the same SSL and HTTP tools as
 [dechonet.com](https://dechonet.com/util/golive)) and writes a table to the job
 summary.
@@ -39,11 +40,36 @@ fails, the gate fails — a lookup error is never a pass.
 The gate clears DechoNet's cached SSL and HTTP results for the host before it
 checks, so you see the site as it is right after the deploy.
 
+## Workflow check (optional)
+
+```yaml
+- uses: actions/checkout@v4
+- uses: node-man/dechonet-gate@v1
+  with:
+    check-workflows: true        # read .github/workflows on the runner
+    workflows-fail-on: high      # high, medium, info or none
+```
+
+It reads your workflow files **on the runner — nothing is sent to DechoNet** — and
+reports the patterns behind this year's GitHub Actions compromises:
+
+| Severity | Finding |
+|---|---|
+| high | `pull_request_target` that checks out the pull request's code ("pwn request") |
+| high | untrusted event text — titles, bodies, branch names, commit messages — put straight into a `run:` script (pass it through `env:` instead) |
+| medium | a third-party action pinned to a tag or branch instead of a full commit SHA (a tag can be moved to other code) |
+| medium | a secret printed with `echo`/`printf` |
+| info | no top-level `permissions:` block |
+
+Findings are annotated on the file and line and listed in the job summary. It is
+line-based (no YAML parser): unusual layouts can be missed, and it never runs
+anything. Without `url`, only the workflow check runs.
+
 ## Inputs
 
 | Input | Default | |
 |---|---|---|
-| `url` | — | Deployed URL to check (required) |
+| `url` | — | Deployed URL to check (empty: workflow check only) |
 | `min-ssl-grade` | `B` | Lowest acceptable SSL grade |
 | `min-header-grade` | `C` | Lowest acceptable security-header grade |
 | `min-cert-days` | `14` | Minimum days before the certificate expires |
@@ -51,10 +77,13 @@ checks, so you see the site as it is right after the deploy.
 | `api-key` | — | DechoNet API key (free, from your DechoNet account). Store it as a secret |
 | `fail-on-unknown` | `false` | Also fail when a check could not be verified |
 | `endpoint` | `https://dechonet.com` | API base URL |
+| `check-workflows` | `false` | Also check this repository's workflow files |
+| `workflows-fail-on` | `high` | Lowest workflow finding that fails the job |
+| `workflows-dir` | `.github/workflows` | Where the workflow files are |
 
-Output: `pass` — `'true'` when every check passed.
+Outputs: `pass` — `'true'` when every site check passed; `workflows-pass` — `'true'` when the workflow check found nothing at or above `workflows-fail-on`.
 
-Needs `bash`, `curl` and `jq`, which GitHub-hosted runners already have.
+Needs `bash`, `curl`, `jq` and `node`, which GitHub-hosted runners already have.
 
 ## Without the action
 
